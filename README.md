@@ -31,21 +31,38 @@
   该卡片之后的旧结果一律清除（卡片标记为“未裁决”）；
 - 表单错误（如提示编号为空）与裁决违规都会在页面上明确反馈。
 
+### 方案对照
+
+监督员想先试排一个调整方案、又不愿当前可执行顺序被试验性拖动覆盖时，可使用“方案对照”：
+
+1. 当前序列非空时点击 **创建对照副本**（**空序列不能创建对照**），系统从当前序列
+   生成一份工作副本——**对照会话只保存原方案与工作副本两份序列**；
+2. 在对照副本中继续使用录入、删除和拖动，**原方案保持不变、只读展示**；
+3. 页面**分别调用同一个裁决器**裁决两条方案，并标出两者
+   **首个动作顺序或裁决结果出现差异的位置**（两列在该位置都有“首个差异”标记）；
+4. 若**副本在首个差异处即违规**，差异区直接关联该卡片，并给出**违规前状态**与**原因**；
+5. 结束对照时二选一：
+   - **采用对照副本**：以副本替换当前序列。复制而来的卡片**保持原有标识**
+     （拖动定位与步骤结果按卡片 id 关联，不会错配），采用后**仍从首项裁决**；
+   - **放弃副本，保留原方案**：当前序列还原为对照前的样子。
+6. 离开对照模式后，页面上的差异标记与对照专用区域全部清除，不残留旧差异。
+
 ### 界面操作
 
 1. 在“提示编号”输入框填写编号，选择动作（候场 / 执行 / 完成 / 取消），点击 **添加卡片**；
 2. 卡片列表中按住卡片**拖动**即可调整顺序，点击 **删除** 移除卡片；
-3. “裁决结果”区实时展示每步后的提示状态或首个违规的详情。
+3. “裁决结果”区实时展示每步后的提示状态或首个违规的详情；
+4. 需要试排调整方案时，点击 **创建对照副本** 进入方案对照（见上节）。
 
 ## 本地开发
 
 ```bash
 npm install          # 安装依赖
 npm run dev          # 开发服务器
-npm run test         # Vitest：裁决逻辑单元测试
+npm run test         # Vitest：裁决逻辑 + 方案对照数据契约（首个差异定位、采用/放弃）
 npm run typecheck    # TypeScript 类型检查
 npm run build        # 生产构建（含类型检查）
-npm run e2e          # Playwright：拖动排序后的主流程（需先 npx playwright install chromium）
+npm run e2e          # Playwright：主流程 + 方案对照流程（需先 npx playwright install chromium）
 npm run verify       # 一次性验收：类型检查 + 单元测试 + 构建
 ```
 
@@ -63,10 +80,13 @@ docker compose run --rm verify         # 一次性验收：类型检查 + Vitest
 ## 目录结构
 
 ```
-src/lib/adjudicate.ts   # 裁决逻辑（纯函数，Vitest 覆盖）
-src/App.tsx             # 卡片录入 / 删除 / 拖动排序 / 裁决结果展示
-tests/adjudicate.test.ts  # 裁决逻辑单元测试
-e2e/main-flow.spec.ts     # Playwright 主流程（含拖动排序）
+src/lib/adjudicate.ts     # 裁决逻辑（纯函数，Vitest 覆盖）
+src/lib/comparison.ts     # 方案对照数据契约：创建副本（空序列拒绝）、首个差异定位、采用/放弃
+src/App.tsx               # 卡片录入 / 删除 / 拖动排序 / 裁决结果 / 方案对照界面
+tests/adjudicate.test.ts    # 裁决逻辑单元测试
+tests/comparison.test.ts    # 方案对照数据契约单元测试（首个差异定位、违规关联、采用/放弃）
+e2e/main-flow.spec.ts       # Playwright 主流程（含拖动排序）
+e2e/comparison-flow.spec.ts # Playwright 方案对照：创建副本→互锁违规→原方案未变→采用修正副本
 Dockerfile              # 多阶段：verify（验收）与 web（静态托管）
 docker-compose.yml      # web（WEB_PORT 可覆盖）+ verify（一次性）
 ```
