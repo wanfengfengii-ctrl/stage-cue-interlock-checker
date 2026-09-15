@@ -1,0 +1,18 @@
+# 唯一的静态 Web 服务 + 一次性验收服务。
+#
+#   docker compose up web            # 启动站点，默认 http://localhost:8080
+#   WEB_PORT=9000 docker compose up web   # 覆盖宿主端口
+#   docker compose run --rm verify   # 一次性验收：类型检查 + 单元测试 + 构建
+services:
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    restart: unless-stopped
+
+  verify:
+    build:
+      context: .
+      target: verify

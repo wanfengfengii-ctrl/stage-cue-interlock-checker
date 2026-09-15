@@ -1,0 +1,28 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+dist-ssr/
+*.local
+
+# 测试与覆盖率产物
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# 缓存
+.npm-cache/
+.vite/
+*.tsbuildinfo
+
+# 日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
