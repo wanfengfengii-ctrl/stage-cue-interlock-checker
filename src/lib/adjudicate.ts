@@ -73,8 +73,18 @@ export type Adjudication =
   | { ok: true; steps: StepResult[]; finalStates: StateSnapshot }
   | { ok: false; steps: StepResult[]; violation: Violation };
 
+/**
+ * 提示编号是任意用户输入，可能恰好等于 Object.prototype 上的属性名
+ * （如 __proto__、constructor、toString）。若用普通对象字面量保存状态表，
+ * 读取会命中继承成员（把 toString 函数误当作状态），写入 __proto__ 甚至会
+ * 修改对象原型。因此状态表一律使用无原型对象。
+ */
+function createStateMap(): StateSnapshot {
+  return Object.create(null) as StateSnapshot;
+}
+
 function copyStates(states: StateSnapshot): StateSnapshot {
-  return { ...states };
+  return Object.assign(createStateMap(), states);
 }
 
 /**
@@ -82,7 +92,7 @@ function copyStates(states: StateSnapshot): StateSnapshot {
  * 纯函数：不修改入参，相同输入恒有相同输出。
  */
 export function adjudicate(cards: readonly CueCard[]): Adjudication {
-  const states: StateSnapshot = {};
+  const states: StateSnapshot = createStateMap();
   const steps: StepResult[] = [];
 
   for (let index = 0; index < cards.length; index++) {

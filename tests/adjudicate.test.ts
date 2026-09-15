@@ -177,6 +177,68 @@ describe('adjudicate：执行互锁', () => {
   });
 });
 
+describe('adjudicate：原型链属性名作为提示编号', () => {
+  // 提示编号是任意用户输入，__proto__ / constructor / toString 等
+  // Object.prototype 上的属性名也必须当作普通编号处理。
+  const PROTOTYPE_KEYS = ['__proto__', 'constructor', 'toString'];
+
+  it('首次候场正常进入候场中，而不是读到继承成员', () => {
+    for (const cue of PROTOTYPE_KEYS) {
+      const result = adjudicate([card(cue, 'standby')]);
+      expect(result.ok, `提示编号 ${cue} 的首次候场应合法`).toBe(true);
+      if (!result.ok) return;
+      expect(result.finalStates[cue]).toBe('standby');
+      expect(result.steps[0].states[cue]).toBe('standby');
+    }
+  });
+
+  it('这些编号可以走完完整生命周期', () => {
+    for (const cue of PROTOTYPE_KEYS) {
+      const result = adjudicate([
+        card(cue, 'standby'),
+        card(cue, 'execute'),
+        card(cue, 'complete'),
+      ]);
+      expect(result.ok, `提示编号 ${cue} 的生命周期应合法`).toBe(true);
+      if (!result.ok) return;
+      expect(result.steps.map((s) => s.states[cue])).toEqual([
+        'standby',
+        'executing',
+        'done',
+      ]);
+    }
+  });
+
+  it('特殊编号同样参与执行互锁，且违规原因中编号正确', () => {
+    const result = adjudicate([
+      card('toString', 'standby'),
+      card('toString', 'execute'),
+      card('constructor', 'standby'),
+      card('constructor', 'execute'),
+    ]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.violation.index).toBe(3);
+    expect(result.violation.reason).toContain('「toString」');
+    expect(result.violation.reason).toContain('最多一个');
+    expect(result.violation.statesBefore['toString']).toBe('executing');
+    expect(result.violation.statesBefore['constructor']).toBe('standby');
+  });
+
+  it('特殊编号的状态查询不污染其他提示', () => {
+    const result = adjudicate([
+      card('__proto__', 'standby'),
+      card('A', 'standby'),
+      card('A', 'execute'),
+    ]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.finalStates['__proto__']).toBe('standby');
+    expect(result.finalStates['A']).toBe('executing');
+    expect(Object.keys(result.finalStates).sort()).toEqual(['A', '__proto__'].sort());
+  });
+});
+
 describe('adjudicate：违规截断语义', () => {
   it('停止在首个违规卡片：违规前的步骤保留，其后的卡片不产生结果', () => {
     const cards = [

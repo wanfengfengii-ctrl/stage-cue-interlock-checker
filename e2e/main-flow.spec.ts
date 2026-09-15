@@ -83,6 +83,22 @@ test('主流程：录入合法序列，拖动打乱后出现首个违规，拖�
   );
 });
 
+test('原型链属性名（__proto__）可作为提示编号正常录入与裁决', async ({ page }) => {
+  await addCard(page, '__proto__', '候场');
+  await addCard(page, '__proto__', '执行');
+  await addCard(page, 'toString', '候场');
+  await expect(page.getByTestId('verdict')).toHaveText('序列合法，可照单执行。');
+  await expect(page.getByTestId('step-list').locator('li').nth(0)).toContainText(
+    '__proto__：候场中',
+  );
+  await expect(page.getByTestId('step-list').locator('li').nth(1)).toContainText(
+    '__proto__：执行中',
+  );
+  await expect(page.getByTestId('step-list').locator('li').nth(2)).toContainText(
+    'toString：候场中',
+  );
+});
+
 test('取消让提示回到空闲，可重新候场；拖动调整顺序后裁决随之更新', async ({ page }) => {
   await addCard(page, 'A', '候场');
   await addCard(page, 'A', '取消');
